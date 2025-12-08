@@ -50,7 +50,11 @@ const PaymentHistory: React.FC = () => {
 
       const totalRentDue = tenant.rent_amount * monthsActive;
       const totalPaid = tenantPayments.reduce(
-        (sum, payment) => sum + payment.amount,
+        (sum, payment) => {
+          // Only count payments that have been made (have a payment date)
+          if (!payment.payment_date) return sum;
+          return sum + payment.amount;
+        },
         0
       );
       const balance = totalRentDue - totalPaid;
@@ -120,11 +124,14 @@ const PaymentHistory: React.FC = () => {
       const year = date.getFullYear();
       const month = date.getMonth();
       
-      // Find payments made in this month
+      // Find payments allocated to this month based on due date
       const monthPayments = tenantPayments.filter(payment => {
         if (!payment.payment_date) return false;
-        const paymentDate = new Date(payment.payment_date);
-        return paymentDate.getFullYear() === year && paymentDate.getMonth() === month;
+        
+        // Use due_date to determine which month the payment is for
+        // This ensures payments for previous months are allocated correctly
+        const [pYear, pMonth] = payment.due_date.split('-').map(Number);
+        return pYear === year && (pMonth - 1) === month;
       });
       
       // Calculate total paid this month
